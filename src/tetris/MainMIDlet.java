@@ -219,7 +219,7 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 			g.setFont(TETRIS_FONT);
 			g.drawString("GAME OVER", getWidth() / 2, getHeight() / 4, Graphics.TOP | Graphics.HCENTER);
 			g.drawString("SCORE", getWidth() / 2, getHeight() / 2, Graphics.TOP | Graphics.HCENTER);
-			g.drawString(score + "", getWidth() / 2, getHeight() / 2 + PADDING * 4, Graphics.TOP | Graphics.LEFT);
+			g.drawString(score + "", (getWidth() - Integer.toString(score).length()) / 2, getHeight() / 2 + PADDING * 4, Graphics.TOP | Graphics.LEFT);
 		}
 
 		public void commandAction(Command command, Displayable displayable) {
