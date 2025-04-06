@@ -78,12 +78,15 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 	// Constant variables
 	private static final int WIDTH = 16;
 	private static final int HEIGHT = 24;
+	private static final Font TETRIS_FONT = Font.getFont(Font.FACE_MONOSPACE, Font.STYLE_BOLD, Font.SIZE_LARGE);
+
 	private static int ARENA_PANEL_HEIGHT;
 	private static int ARENA_PANEL_WIDTH;
 	private static int STATUS_PANEL_WIDTH;
 	private static int ARENA_TOP;
 	private static int PADDING;
 	private static int BLOCK_SIZE;
+
 
 	// Timers
 	// move the tetromino down every FALL_TIME miliseconds
@@ -97,8 +100,8 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 
 	//	 Dynamic variables
 	private static int grid[][] = new int[HEIGHT][WIDTH];
-	private static int[][] currentTetromino = TETROMINOS[0];
-	private static int currentTetrominoX = (WIDTH - currentTetromino[0].length) / 2;
+	private int[][] currentTetromino = generateTetromino();
+	private int currentTetrominoX = (WIDTH - currentTetromino[0].length) / 2;
 	private static int currentTetrominoY = ARENA_TOP;
 	private static int[][][] nextTetrominos = new int[4][][];
 	private static int score = 0;
@@ -174,9 +177,61 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 		}
 	}
 
-	private void checkGameOver() {
-		// TODO
+	// reset score and reinitialize variables
+	private void restartGame() {
+		score = 0;
+		initialize();
 	}
+
+	private void checkGameOver() {
+		int tetrominoWidth = currentTetromino[0].length;
+
+		for (int j = 0; j < tetrominoWidth; j++) {
+			int gridX = currentTetrominoX + j;
+			// if the tetromino is placed in such a way that it can lead to a game over
+			if (currentTetromino[0][j] != 0 && grid[0][gridX] != BLACK) {
+				switchDisplayable(null, new GameOverCanvas());
+			}
+		}
+	}
+
+	// print game over screen
+	private class GameOverCanvas extends Canvas implements CommandListener {
+
+		// buttons (OK & EXIT)
+		private Command restartCommand;
+		private Command exitCommand;
+
+		public GameOverCanvas() {
+			restartCommand = new Command("Restart", Command.OK, 1);
+			addCommand(restartCommand);
+
+			exitCommand = new Command("Exit", Command.EXIT, 1);
+			addCommand(exitCommand);
+
+			setCommandListener(this);
+		}
+
+		protected void paint(Graphics g) {
+			g.setColor(BLACK);
+			g.fillRect(0, 0, getWidth(), getHeight());
+			g.setColor(WHITE);
+			g.setFont(TETRIS_FONT);
+			g.drawString("GAME OVER", getWidth() / 2, getHeight() / 4, Graphics.TOP | Graphics.HCENTER);
+			g.drawString("SCORE", getWidth() / 2, getHeight() / 2, Graphics.TOP | Graphics.HCENTER);
+			g.drawString(score + "", getWidth() / 2, getHeight() / 2 + PADDING * 4, Graphics.TOP | Graphics.LEFT);
+		}
+
+		public void commandAction(Command command, Displayable displayable) {
+			if (command == restartCommand) {
+				restartGame();
+			} else if (command == exitCommand) {
+				exitMIDlet();
+			}
+		}
+	}
+
+
 	private void moveTetrominoDown() {
 		// move down
 		if (canMoveDown(currentTetromino)) {
@@ -206,6 +261,14 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 	}
 
 	private void initialize() {
+		// if we are restarting, clear the timers
+		if (fallTimer != null) {
+			fallTimer.cancel();
+		}
+
+		if (fastFallTimer != null) {
+			fastFallTimer.cancel();
+		}
 
 		// initialize grid
 		for (int i = 0; i < HEIGHT; i++) {
@@ -230,11 +293,11 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 		}, FALL_TIME, FALL_TIME);
 
 		canvas = new TetrisCanvas();
+		switchDisplayable(null, canvas);
 	}
 
 	// MIDlet functions
 	public void startMIDlet() {
-		switchDisplayable(null, canvas);
 	}
 
 	public void resumeMIDlet() {
@@ -364,18 +427,17 @@ public class MainMIDlet extends MIDlet implements CommandListener {
 			// Status Panel
 			int scorePadding = ((BLOCK_SIZE * 3 * 3 + PADDING / 2)) / 2 + PADDING * 2;
 
-			Font tetrisFont = Font.getFont(Font.FACE_MONOSPACE, Font.STYLE_BOLD, Font.SIZE_LARGE);
-			g.setFont(tetrisFont);
+			g.setFont(TETRIS_FONT);
 			g.setColor(WHITE);
 
 
-			int scoreStringX = tetrisFont.stringWidth("SCO") / 2 + ARENA_PANEL_WIDTH + PADDING * 2;
+			int scoreStringX = TETRIS_FONT.stringWidth("SCO") / 2 + ARENA_PANEL_WIDTH + PADDING * 2;
 			g.drawString("SCORE", scoreStringX, ARENA_TOP, Graphics.TOP | Graphics.LEFT);
 
-			int scoreNumberStringX = (STATUS_PANEL_WIDTH - tetrisFont.stringWidth(score + "")) / 2 + ARENA_PANEL_WIDTH + PADDING;
+			int scoreNumberStringX = (STATUS_PANEL_WIDTH - TETRIS_FONT.stringWidth(score + "")) / 2 + ARENA_PANEL_WIDTH + PADDING;
 			g.drawString(score + "", scoreNumberStringX, ARENA_TOP + PADDING * 4, Graphics.TOP | Graphics.LEFT);
 
-			int nextStringX = tetrisFont.stringWidth("NEXT") / 2 + ARENA_PANEL_WIDTH + PADDING * 2;
+			int nextStringX = TETRIS_FONT.stringWidth("NEXT") / 2 + ARENA_PANEL_WIDTH + PADDING * 2;
 			g.drawString("NEXT", nextStringX, ARENA_TOP + scorePadding, Graphics.TOP | Graphics.LEFT);
 
 			for (int i = 0; i < nextTetrominos.length; i++) {
